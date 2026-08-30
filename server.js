@@ -10,6 +10,21 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Auth Middleware
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
+
+app.use('/api', (req, res, next) => {
+  // Allow preflight CORS
+  if (req.method === 'OPTIONS') return next();
+  
+  const pwd = req.headers['x-admin-password'];
+  if (pwd === ADMIN_PASSWORD) {
+    next();
+  } else {
+    res.status(401).json({ error: 'Unauthorized' });
+  }
+});
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB Atlas'))

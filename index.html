@@ -239,6 +239,26 @@
         </div>
     </div>
 
+    <!-- Login Modal overlay -->
+    <div id="login-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm modal-animate overflow-hidden border border-gray-200 dark:border-gray-700 relative">
+            <div class="px-6 py-6 text-center">
+                <div class="w-16 h-16 bg-primary/10 dark:bg-primary-dark/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="material-symbols-outlined text-3xl text-primary dark:text-primary-dark">lock</span>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Restricted Access</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Please enter the master password to access your clipboard.</p>
+                <div class="relative">
+                    <input type="password" id="login-password-input" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary dark:text-white text-center text-lg tracking-widest" placeholder="••••••••">
+                </div>
+                <p id="login-error-msg" class="text-red-500 text-sm font-semibold mt-3 hidden">Incorrect password</p>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-center border-t border-gray-200 dark:border-gray-700">
+                <button id="login-submit-btn" class="w-full px-4 py-3 text-base font-semibold text-white bg-primary hover:bg-blue-700 rounded-xl transition-colors shadow-md">Unlock</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 

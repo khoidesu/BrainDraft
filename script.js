@@ -58,6 +58,20 @@ const bgBlurSlider = document.getElementById('bg-blur-slider');
 const blurValueDisplay = document.getElementById('blur-value-display');
 const appBackground = document.getElementById('app-background');
 
+// Login Elements
+const loginModal = document.getElementById('login-modal');
+const loginPasswordInput = document.getElementById('login-password-input');
+const loginSubmitBtn = document.getElementById('login-submit-btn');
+const loginErrorMsg = document.getElementById('login-error-msg');
+
+function getAuthHeaders() {
+    const pwd = localStorage.getItem('clipbox_admin_pwd') || '';
+    return {
+        'Content-Type': 'application/json',
+        'x-admin-password': pwd
+    };
+}
+
 // --- Initialization ---
 async function init() {
     initDarkMode();
@@ -65,25 +79,36 @@ async function init() {
     renderColorPicker();
     setupEventListeners();
 
+    await loadData();
+}
+
+async function loadData() {
     try {
         const [catsRes, clipsRes] = await Promise.all([
-            fetch(`${API_URL}/categories`),
-            fetch(`${API_URL}/clips`)
+            fetch(`${API_URL}/categories`, { headers: getAuthHeaders() }),
+            fetch(`${API_URL}/clips`, { headers: getAuthHeaders() })
         ]);
+
+        if (catsRes.status === 401 || clipsRes.status === 401) {
+            loginModal.classList.remove('hidden');
+            loginPasswordInput.focus();
+            return;
+        }
 
         if (catsRes.ok) categories = await catsRes.json();
         if (clipsRes.ok) clips = await clipsRes.json();
+        
+        loginModal.classList.add('hidden');
+        renderCategories();
+        renderClips();
+
+        // Scroll to bottom
+        setTimeout(() => {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }, 100);
     } catch (err) {
         console.error('Error fetching data:', err);
     }
-
-    renderCategories();
-    renderClips();
-
-    // Scroll to bottom
-    setTimeout(() => {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    }, 100);
 }
 
 // --- Event Listeners ---
@@ -162,7 +187,7 @@ function setupEventListeners() {
             try {
                 const res = await fetch(`${API_URL}/categories`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify(newCat)
                 });
                 if (res.ok) {
@@ -172,6 +197,8 @@ function setupEventListeners() {
                     activeCategoryId = savedCat.id;
                     updateActiveCategoryUI();
                     closeModal();
+                } else if (res.status === 401) {
+                    alert("Unauthorized. Please check your password.");
                 }
             } catch (err) {
                 console.error('Error creating category:', err);
@@ -223,6 +250,32 @@ function setupEventListeners() {
     searchInput.addEventListener('input', (e) => {
         searchQuery = e.target.value.toLowerCase();
         renderClips();
+    });
+
+    // Login Submission
+    const submitLogin = async () => {
+        const pwd = loginPasswordInput.value.trim();
+        if (!pwd) return;
+        localStorage.setItem('clipbox_admin_pwd', pwd);
+        loginErrorMsg.classList.add('hidden');
+        
+        // Test auth by fetching data again
+        try {
+            const res = await fetch(`${API_URL}/categories`, { headers: getAuthHeaders() });
+            if (res.status === 401) {
+                loginErrorMsg.classList.remove('hidden');
+                localStorage.removeItem('clipbox_admin_pwd');
+            } else {
+                loginModal.classList.add('hidden');
+                await loadData();
+            }
+        } catch(e) {
+            console.error('Login error', e);
+        }
+    };
+    loginSubmitBtn.addEventListener('click', submitLogin);
+    loginPasswordInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') submitLogin();
     });
 }
 
@@ -297,7 +350,7 @@ async function handleSend() {
     try {
         const res = await fetch(`${API_URL}/clips`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify(newClip)
         });
         if (res.ok) {
@@ -309,6 +362,8 @@ async function handleSend() {
             setTimeout(() => {
                 chatContainer.scrollTop = chatContainer.scrollHeight;
             }, 100);
+        } else if (res.status === 401) {
+            alert("Unauthorized. Please check your password.");
         }
     } catch (err) {
         console.error('Error saving clip:', err);
@@ -415,10 +470,15 @@ function copyToClipboard(text) {
 
 window.deleteClip = async function (id) {
     try {
-        const res = await fetch(`${API_URL}/clips/${id}`, { method: 'DELETE' });
+        const res = await fetch(`${API_URL}/clips/${id}`, { 
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
         if (res.ok) {
             clips = clips.filter(c => c.id !== id);
             renderClips();
+        } else if (res.status === 401) {
+            alert("Unauthorized. Please check your password.");
         }
     } catch (err) {
         console.error('Error deleting clip:', err);
